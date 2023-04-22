@@ -1,0 +1,34 @@
+version: '3.8'
+services:
+  app:
+    image: aoirint/liveinfo_api_middleware:0.1.0
+    restart: always
+    environment:
+      YTLIVE_CHANNEL_ID: ${YTLIVE_CHANNEL_ID:?}
+      YTLIVE_API_KEY: ${YTLIVE_API_KEY:?}
+      YTLIVE_DUMP_PATH: ${YTLIVE_DUMP_PATH:?}
+      NICOLIVE_COMMUNITY_ID: ${NICOLIVE_COMMUNITY_ID:?}
+      NICOLIVE_DUMP_PATH: ${NICOLIVE_DUMP_PATH:?}
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:?}
+    volumes:
+      - "${HOST_DATA_DIR:?}:/data"
+
+  nginx:
+    image: nginx:latest
+    restart: always
+    depends_on:
+      - app
+    volumes:
+      - ./nginx_templates:/etc/nginx/templates
+      - ${NGINX_LOG_DIR:?}:/logs
+    environment:
+      - NGINX_ENVSUBST_TEMPLATE_SUFFIX=.nginx
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel run
+    restart: always
+    depends_on:
+      - nginx
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARED_TUNNEL_TOKEN:?}
